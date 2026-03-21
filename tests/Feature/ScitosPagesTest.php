@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ScitosPagesTest extends TestCase
@@ -165,6 +167,86 @@ class ScitosPagesTest extends TestCase
             ->assertOk()
             ->assertSee('Dashboard Executive Admin')
             ->assertSee('Available');
+    }
+
+    public function test_admin_can_publish_material_task_to_classroom_stream(): void
+    {
+        Storage::fake('public');
+
+        $adminSession = [
+            'scitos_auth' => [
+                'role' => 'admin',
+                'admin_role' => 'admin',
+                'admin_label' => config('scitos.auth.admin_roles.admin.label'),
+                'name' => config('scitos.auth.admin_roles.admin.display_name'),
+                'identifier' => config('scitos.auth.admin_roles.admin.username'),
+            ],
+        ];
+
+        $response = $this->withSession($adminSession)->post(route('admin.classroom.store'), [
+            'title' => 'Materi Timeline Divisi',
+            'division' => 'Programming & Jaringan',
+            'task_type' => 'material',
+            'topic' => 'Timeline Sprint',
+            'description' => 'Pelajari materi sprint lalu unggah hasil implementasi.',
+            'due_date' => '2026-04-11',
+            'attachment' => UploadedFile::fake()->create('brief.pdf', 200, 'application/pdf'),
+        ]);
+
+        $response->assertRedirect(route('admin.panel') . '#classroom-control');
+        $response->assertSessionHas('scitos_classroom.custom_tasks.0.title', 'Materi Timeline Divisi');
+
+        $this->withSession([
+            ...$adminSession,
+            'scitos_classroom' => [
+                'custom_tasks' => [
+                    [
+                        'id' => 'custom-preview',
+                        'title' => 'Materi Timeline Divisi',
+                        'division' => 'Programming & Jaringan',
+                        'coordinator' => config('scitos.auth.admin_roles.admin.display_name'),
+                        'status' => 'Published',
+                        'task_type' => 'material',
+                        'topic' => 'Timeline Sprint',
+                        'deadline' => 'Deadline 11 Apr 2026',
+                        'due_date' => '2026-04-11',
+                        'format' => 'Instruksi tugas',
+                        'score' => null,
+                        'summary' => 'Pelajari materi sprint lalu unggah hasil implementasi.',
+                        'attachments' => [],
+                    ],
+                ],
+            ],
+        ])->get(route('classroom'))
+            ->assertOk()
+            ->assertSee('Materi Timeline Divisi')
+            ->assertSee('Timeline Sprint');
+    }
+
+    public function test_regular_admin_cannot_create_quiz_task(): void
+    {
+        $adminSession = [
+            'scitos_auth' => [
+                'role' => 'admin',
+                'admin_role' => 'admin',
+                'admin_label' => config('scitos.auth.admin_roles.admin.label'),
+                'name' => config('scitos.auth.admin_roles.admin.display_name'),
+                'identifier' => config('scitos.auth.admin_roles.admin.username'),
+            ],
+        ];
+
+        $response = $this->from(route('admin.panel'))->withSession($adminSession)->post(route('admin.classroom.store'), [
+            'title' => 'Quiz Dasar Sistem',
+            'division' => 'Programming & Jaringan',
+            'task_type' => 'quiz',
+            'topic' => 'System Quiz',
+            'description' => 'Buat quiz uji logika sistem.',
+            'due_date' => '2026-04-12',
+            'score' => 100,
+        ]);
+
+        $response->assertRedirect(route('admin.panel'));
+        $response->assertSessionHasErrors('task_type');
     }
 
     public function test_admin_panel_redirects_guests_to_admin_login(): void

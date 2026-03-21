@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ScitosAuthController;
+use App\Http\Controllers\ScitosAdminController;
 use Illuminate\Support\Facades\Route;
 
 $scitos = config('scitos');
@@ -32,6 +33,7 @@ Route::get('/gabung', $renderPage('scitos.pages.gabung', 'gabung', 'Gabung SCI-T
 Route::get('/login', [ScitosAuthController::class, 'show'])->name('login');
 Route::post('/login', [ScitosAuthController::class, 'authenticate'])->name('login.store');
 Route::post('/logout', [ScitosAuthController::class, 'logout'])->name('logout');
+Route::post('/admin/classroom/tasks', [ScitosAdminController::class, 'storeClassroomTask'])->name('admin.classroom.store');
 
 Route::get(
     '/admin/panel',

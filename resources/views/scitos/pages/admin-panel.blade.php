@@ -5,6 +5,10 @@
     $activeAdminRole = data_get($authUser, 'admin_role', 'admin');
     $adminRoles = data_get($scitos, 'auth.admin_roles', []);
     $activeRoleConfig = data_get($adminRoles, $activeAdminRole, []);
+    $divisionOptions = collect(data_get($scitos, 'divisions', []))->pluck('name')->all();
+    $customClassroomTasks = collect(session('scitos_classroom.custom_tasks', []));
+    $seedTasks = collect(data_get($scitos, 'classroom.tasks', []));
+    $allClassroomTasks = $customClassroomTasks->concat($seedTasks)->values();
     $modules = [
         [
             'title' => 'Classroom Console',
@@ -54,13 +58,13 @@
         <aside class="admin-card admin-sidebar">
             <span class="admin-kicker">Backoffice</span>
             <h2 style="margin-top: 14px;">Menu Admin</h2>
-            <p style="margin-top: 10px;">Panel ini dipakai untuk memantau modul website SCI-TOS dengan tampilan yang lebih ringan dan mudah dipakai.</p>
+            <p style="margin-top: 10px;">Panel ini dipakai untuk memantau modul website SCI-TOS dan sekarang sudah punya kontrol classroom langsung.</p>
 
             <ul class="admin-menu">
                 <li><a href="#overview">Dashboard <small>{{ $openModules->count() }} aktif</small></a></li>
+                <li><a href="#classroom-control">Classroom Control <small>{{ $customClassroomTasks->count() }} custom</small></a></li>
                 <li><a href="#roles">Role Admin <small>{{ data_get($authUser, 'admin_label') }}</small></a></li>
                 <li><a href="#modules">Feature Access <small>{{ $activeAdminRole === 'executive' ? 'Full' : 'Limited' }}</small></a></li>
-                <li><a href="{{ route('home') }}">Kembali ke Website <small>Home</small></a></li>
             </ul>
         </aside>
 
@@ -83,12 +87,140 @@
                     <span>Modul yang bisa diakses sekarang</span>
                 </div>
                 <div class="admin-card admin-stat-card">
-                    <strong>{{ collect($modules)->where('access', 'executive')->count() }}</strong>
-                    <span>Modul executive control</span>
+                    <strong>{{ $allClassroomTasks->count() }}</strong>
+                    <span>Total item classroom</span>
                 </div>
                 <div class="admin-card admin-stat-card">
                     <strong>{{ count(data_get($activeRoleConfig, 'permissions', [])) }}</strong>
                     <span>Hak akses pada level ini</span>
+                </div>
+            </div>
+
+            <div class="admin-section" id="classroom-control">
+                <h3>Classroom Control Center</h3>
+                <div class="admin-two-col">
+                    <div class="admin-card admin-role-card">
+                        <span class="admin-kicker">Buat Tugas Baru</span>
+                        <p style="margin-top: 14px;">Admin bisa menambahkan tugas berbentuk teks, tugas dengan file, dan khusus executive admin bisa membuat quiz dengan skor.</p>
+
+                        <form action="{{ route('admin.classroom.store') }}" method="post" enctype="multipart/form-data" class="admin-form-grid" style="margin-top: 20px;">
+                            @csrf
+
+                            <div class="admin-field">
+                                <label for="title">Judul Tugas</label>
+                                <input id="title" name="title" type="text" class="admin-input" value="{{ old('title') }}" placeholder="Contoh: Quiz Dasar UI Classroom">
+                                @error('title')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field">
+                                <label for="division">Divisi</label>
+                                <select id="division" name="division">
+                                    <option value="">Pilih divisi</option>
+                                    @foreach ($divisionOptions as $division)
+                                        <option value="{{ $division }}" @selected(old('division') === $division)>{{ $division }}</option>
+                                    @endforeach
+                                </select>
+                                @error('division')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field">
+                                <label for="task_type">Tipe Tugas</label>
+                                <select id="task_type" name="task_type">
+                                    <option value="text" @selected(old('task_type') === 'text')>Hanya Teks</option>
+                                    <option value="material" @selected(old('task_type') === 'material')>Teks + File</option>
+                                    @if ($activeAdminRole === 'executive')
+                                        <option value="quiz" @selected(old('task_type') === 'quiz')>Quiz dengan Skor</option>
+                                    @endif
+                                </select>
+                                @error('task_type')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @else
+                                    <span class="admin-helper">{{ $activeAdminRole === 'executive' ? 'Executive admin bisa membuat quiz dengan skor.' : 'Admin biasa bisa membuat tugas teks dan tugas dengan file.' }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field">
+                                <label for="topic">Topik</label>
+                                <input id="topic" name="topic" type="text" class="admin-input" value="{{ old('topic') }}" placeholder="Contoh: Weekly Review">
+                                @error('topic')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field">
+                                <label for="due_date">Tanggal Deadline</label>
+                                <input id="due_date" name="due_date" type="date" class="admin-input" value="{{ old('due_date') }}">
+                                @error('due_date')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field">
+                                <label for="score">Skor Quiz</label>
+                                <input id="score" name="score" type="number" min="1" max="1000" class="admin-input" value="{{ old('score') }}" placeholder="{{ $activeAdminRole === 'executive' ? 'Contoh: 100' : 'Executive only' }}" {{ $activeAdminRole !== 'executive' ? 'disabled' : '' }}>
+                                @error('score')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @else
+                                    <span class="admin-helper">{{ $activeAdminRole === 'executive' ? 'Isi jika tipe tugas adalah quiz.' : 'Skor hanya aktif untuk executive admin.' }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field is-full">
+                                <label for="description">Deskripsi Tugas</label>
+                                <textarea id="description" name="description" placeholder="Masukkan instruksi tugas, materi, atau deskripsi quiz...">{{ old('description') }}</textarea>
+                                @error('description')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field is-full">
+                                <label for="attachment">Lampiran File</label>
+                                <input id="attachment" name="attachment" type="file" class="admin-input" accept=".pdf,.png,.jpg,.jpeg,.webp,.mp4,.mov,.webm,.doc,.docx,.ppt,.pptx">
+                                @error('attachment')
+                                    <span class="admin-error">{{ $message }}</span>
+                                @else
+                                    <span class="admin-helper">Bisa berupa PDF, foto, video, atau dokumen lain. Jika tidak ada file, tugas tetap bisa dipublikasikan sebagai teks.</span>
+                                @enderror
+                            </div>
+
+                            <div class="admin-field is-full">
+                                <button type="submit" class="admin-btn admin-btn-primary">Publikasikan ke Classroom</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="admin-card admin-role-card">
+                        <span class="admin-kicker">Preview Stream</span>
+                        <p style="margin-top: 14px;">Task yang Anda tambahkan dari panel ini langsung masuk ke stream classroom prototype pada sesi aktif saat ini.</p>
+
+                        <div class="admin-stream-list" style="margin-top: 20px;">
+                            @forelse ($customClassroomTasks as $task)
+                                <article class="admin-stream-item">
+                                    <strong>{{ $task['title'] }}</strong>
+                                    <p>{{ $task['summary'] }}</p>
+                                    <div class="admin-stream-meta">
+                                        <span>{{ ucfirst($task['task_type']) }}</span>
+                                        <span>{{ $task['division'] }}</span>
+                                        @if (! empty($task['score']))
+                                            <span>{{ $task['score'] }} pts</span>
+                                        @endif
+                                        @if (! empty($task['attachments']))
+                                            <span>{{ count($task['attachments']) }} lampiran</span>
+                                        @endif
+                                    </div>
+                                </article>
+                            @empty
+                                <article class="admin-stream-item">
+                                    <strong>Belum ada tugas custom</strong>
+                                    <p>Tugas yang dibuat lewat panel admin akan muncul di sini lalu otomatis ikut tampil di halaman classroom.</p>
+                                </article>
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
             </div>
 

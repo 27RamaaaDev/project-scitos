@@ -382,6 +382,109 @@
             gap: 14px;
         }
 
+        .admin-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .admin-field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .admin-field.is-full {
+            grid-column: 1 / -1;
+        }
+
+        .admin-field label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--admin-accent);
+        }
+
+        .admin-input,
+        .admin-field select,
+        .admin-field textarea {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid var(--admin-border);
+            background: var(--admin-surface-soft);
+            padding: 12px 14px;
+            color: var(--admin-text);
+            font-size: 0.94rem;
+            font-family: "Inter", sans-serif;
+        }
+
+        .admin-field textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        .admin-input:focus,
+        .admin-field select:focus,
+        .admin-field textarea:focus {
+            outline: none;
+            border-color: #bfdbfe;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+
+        .admin-helper,
+        .admin-error {
+            font-size: 0.8rem;
+            color: var(--admin-muted);
+        }
+
+        .admin-error {
+            color: #dc2626;
+        }
+
+        .admin-two-col {
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 18px;
+        }
+
+        .admin-stream-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .admin-stream-item {
+            padding: 16px;
+            border-radius: 16px;
+            background: var(--admin-surface-soft);
+            border: 1px solid var(--admin-border);
+        }
+
+        .admin-stream-item strong {
+            display: block;
+            color: var(--admin-accent);
+        }
+
+        .admin-stream-item p {
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        .admin-stream-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .admin-stream-meta span {
+            display: inline-flex;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid var(--admin-border);
+            color: var(--admin-muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+
         .admin-module-meta {
             display: flex;
             flex-wrap: wrap;
@@ -483,7 +586,8 @@
             .admin-page-shell,
             .admin-role-grid,
             .admin-stat-grid,
-            .admin-module-grid {
+            .admin-module-grid,
+            .admin-two-col {
                 grid-template-columns: 1fr;
             }
 
@@ -526,6 +630,10 @@
                 width: 100%;
                 justify-content: flex-start;
             }
+
+            .admin-form-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -546,6 +654,7 @@
 
             <nav class="admin-topbar-center" aria-label="Admin navigation">
                 <a href="#overview" class="admin-toplink">Overview</a>
+                <a href="#classroom-control" class="admin-toplink">Classroom</a>
                 <a href="#roles" class="admin-toplink">Role Admin</a>
                 <a href="#modules" class="admin-toplink">Feature Access</a>
             </nav>
